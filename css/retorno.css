@@ -1,0 +1,237 @@
+/* ============================================================
+   TELA DE RETORNO — a janela de quem opera
+
+   Vive no monitor do PC da apresentação, enquanto o projetor
+   recebe o deck em tela cheia na outra saída.
+
+   A hierarquia aqui é o contrário da de um slide. O maior
+   elemento da tela não é o que está projetado — é a DEIXA: a
+   frase que o Danilo vai falar imediatamente antes do próximo
+   avanço. Quem aperta a seta não está lendo a apresentação,
+   está escutando a fala e esperando um gatilho. Se a deixa não
+   for a coisa mais legível da tela, a animação cai meio segundo
+   depois da palavra que ela deveria pontuar — e meio segundo
+   atrasado é o suficiente pra parecer amador.
+
+   Corpo grande também porque o Danilo pediu pra conseguir ler
+   "de longe", do palco.
+   ============================================================ */
+
+:root {
+  --fonte: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Consolas, monospace;
+  --fundo: #0A0A0F;
+  --painel: #14141B;
+  --linha: rgba(255, 255, 255, 0.12);
+  --tinta: #FFFFFF;
+  --tinta-2: #B8B8C4;
+  --tinta-3: #6E6E7A;
+  --verde: #00AA4C;
+  --amarelo: #F47D4E;
+  --vermelho: #CF2A2E;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--fonte);
+  background: var(--fundo);
+  color: var(--tinta);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------- cabeçalho ---------------- */
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.85rem clamp(1rem, 2.5vw, 2rem);
+  border-bottom: 1px solid var(--linha);
+  background: var(--painel);
+}
+
+.topo__bloco {
+  font-family: var(--mono);
+  font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cor, var(--verde));
+  font-weight: 500;
+}
+
+.topo__dir { display: flex; align-items: center; gap: clamp(1rem, 2.5vw, 2.5rem); }
+
+.contador {
+  font-family: var(--mono);
+  font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+  color: var(--tinta-3);
+  letter-spacing: 0.1em;
+}
+.contador b { color: var(--tinta); font-weight: 500; }
+
+.relogio {
+  font-family: var(--mono);
+  font-size: clamp(1.2rem, 2.4vw, 2rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.relogio.is-parado { color: var(--tinta-3); }
+.relogio.is-atrasado { color: var(--amarelo); }
+.relogio.is-estourado { color: var(--vermelho); }
+
+.checkpoint {
+  font-family: var(--mono);
+  font-size: clamp(0.62rem, 0.95vw, 0.82rem);
+  color: var(--tinta-3);
+  letter-spacing: 0.08em;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* ---------------- corpo ---------------- */
+.corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+  gap: 1px;
+  background: var(--linha);
+  min-height: 0;
+}
+
+.coluna {
+  background: var(--fundo);
+  padding: clamp(1rem, 2.2vw, 2rem);
+  display: grid;
+  gap: clamp(0.9rem, 2vh, 1.6rem);
+  align-content: start;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* A coluna da esquerda dá TODA a sobra de altura pra deixa. Ela
+   é o que o operador lê de relance no meio de uma fala, e o que
+   o Danilo tenta ler do palco — quanto maior, melhor. */
+.coluna--principal {
+  grid-template-rows: auto auto auto 1fr auto;
+  align-content: stretch;
+}
+
+.rot {
+  font-family: var(--mono);
+  font-size: clamp(0.62rem, 0.95vw, 0.82rem);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+}
+
+/* --- na tela agora --- */
+.agora__t {
+  font-size: clamp(1.2rem, 2.3vw, 2rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+.agora__d {
+  font-size: clamp(0.9rem, 1.35vw, 1.2rem);
+  color: var(--tinta-2);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* --- A DEIXA: o maior elemento da tela --- */
+.deixa {
+  border-top: 1px solid var(--linha);
+  padding-top: clamp(0.9rem, 2vh, 1.6rem);
+  margin-top: clamp(0.4rem, 1vh, 1rem);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0.7rem;
+  min-height: 0;
+}
+.deixa__txt { align-self: center; }
+.deixa__rot { color: var(--verde); }
+.deixa__txt {
+  font-size: clamp(1.8rem, 4.4vw, 5rem);
+  font-weight: 500;
+  line-height: 1.16;
+  letter-spacing: -0.02em;
+}
+.deixa__txt.is-vazia { color: var(--tinta-3); font-weight: 400; font-style: italic; }
+
+/* --- próximo --- */
+.prox {
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  padding: clamp(0.8rem, 1.6vw, 1.3rem);
+  display: grid;
+  gap: 0.55rem;
+  background: var(--painel);
+}
+.prox__t {
+  font-size: clamp(1rem, 1.7vw, 1.45rem);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.prox__d {
+  font-size: clamp(0.82rem, 1.15vw, 1rem);
+  color: var(--tinta-2);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.prox__tag {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cor, var(--verde));
+}
+.prox__tag--secao {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.2em 0.7em;
+  justify-self: start;
+}
+
+/* --- avisos do roteiro (pausas, não narrar, tom) --- */
+.aviso {
+  border-left: 3px solid var(--amarelo);
+  padding: 0.6rem 0 0.6rem 0.9rem;
+  font-size: clamp(0.8rem, 1.15vw, 1rem);
+  color: var(--amarelo);
+  line-height: 1.4;
+}
+.aviso:empty { display: none; }
+
+/* --- rodapé de teclas --- */
+.teclas {
+  font-family: var(--mono);
+  font-size: clamp(0.6rem, 0.9vw, 0.76rem);
+  color: var(--tinta-3);
+  letter-spacing: 0.06em;
+  line-height: 1.9;
+  border-top: 1px solid var(--linha);
+  padding-top: 0.8rem;
+}
+.teclas b { color: var(--tinta-2); font-weight: 500; }
+
+.esperando {
+  grid-column: 1 / -1;
+  display: grid;
+  place-content: center;
+  gap: 0.8rem;
+  text-align: center;
+  color: var(--tinta-3);
+  background: var(--fundo);
+}

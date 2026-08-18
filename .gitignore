@@ -1,0 +1,7 @@
+# Ruído de SO / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Fonte crua da Inter — o deck usa a versão base64 em css/fontes.css
+fontes/*.woff2

@@ -1,0 +1,698 @@
+/* ============================================================
+   LAYOUTS
+
+   Doze composições. A variação de alinhamento entre elas é
+   deliberada: 47 seções todas centralizadas viram sono. O olho
+   precisa reencontrar o texto de vez em quando pra continuar
+   acordado — mas dentro de um repertório fechado, senão vira
+   ruído. Por isso doze, e não quarenta e sete.
+   ============================================================ */
+
+/* ── AS REGIÕES ─────────────────────────────────────────────
+   Cada layout expõe regiões nomeadas (topo, principal, lado,
+   midia) e os passos do roteiro caem dentro delas. Uma região
+   pode receber vários passos, então ela é uma pilha com respiro
+   — sem isto o parágrafo e a frase de impacto encostam um no
+   outro e a hierarquia some.
+
+   Especificidade de propósito baixa (uma classe só, e no topo
+   do arquivo): qualquer layout abaixo que precise de outro
+   display — a grade de logos, a constelação, os números da
+   história — sobrescreve só por vir depois.
+   ─────────────────────────────────────────────────────────── */
+[data-r] {
+  display: grid;
+  gap: var(--gap);
+  align-content: start;
+  justify-items: inherit;
+  /* min-width: 0 quebra o piso de min-content. Sem ele, uma
+     linha de wipe com white-space: nowrap empurra a trilha do
+     grid pra fora do container — e a medição de largura do
+     deck.js passa a perguntar a largura disponível pra uma
+     caixa que JÁ cresceu junto com o texto, recebendo sempre
+     de volta o próprio tamanho do texto. */
+  min-width: 0;
+}
+
+/* Seções que convivem com a espinha reservam o rodapé pra ela. */
+.secao--espinha { padding-bottom: 26vh; }
+
+/* Uma região de mídia dá o tamanho; a moldura preenche. Sem
+   isto a moldura calcula altura pela própria proporção e sobra
+   ou falta espaço dentro da região. */
+/* Uma região de mídia é uma caixa de tamanho conhecido, e a
+   moldura preenche ela inteira. O `grid-template-rows: 1fr` é o
+   que faz isso funcionar: sem uma trilha explícita, a linha do
+   grid é dimensionada PELO conteúdo, o `height: 100%` do filho
+   passa a se referir a uma altura indefinida, vira `auto`, e a
+   moldura colapsa pra dois pixels. Com a trilha em 1fr a altura
+   vira definida e a corrente toda resolve. */
+.l-pessoa__foto,
+.l-video__moldura {
+  grid-template-rows: 1fr;
+  align-content: stretch;
+}
+.l-pessoa__foto > [data-passo],
+.l-video__moldura > [data-passo] { height: 100%; min-height: 0; }
+.l-pessoa__foto .moldura,
+.l-video__moldura .moldura { width: 100%; height: 100%; }
+
+/* Tamanho padrão do wipe. Sem isto ele herda os 16px do body e
+   a frase mais importante do slide sai menor que a legenda.
+
+   O `min(..., 52vh / linhas)` é o que impede a frase de vazar:
+   o wipe nunca passa de pouco mais da metade da tela, não
+   importa quantas linhas o roteiro tenha declarado. Uma frase
+   de uma linha fica gigante; uma de quatro encolhe sozinha.
+   `--linhas` é escrito por reveals.js na montagem. */
+.destaque .wipe {
+  font-size: calc(min(var(--t-sub), calc(52vh * var(--fit, 1) / var(--linhas, 1))) * var(--fw, 1));
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+}
+.destaque { margin-block: 0.15em; }
+
+/* Tamanho padrão do scramble: etiqueta. Datas e números pedem
+   escalas próprias e sobrescrevem no layout de cada um. */
+.dado .scr {
+  font-size: clamp(0.85rem, 1.35vw, 1.6rem);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--cor-ato, var(--blue));
+}
+.dado--grande .scr {
+  font-size: var(--t-titulo);
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+.dado { display: grid; gap: 0.5em; justify-items: inherit; }
+
+/* ============================================================
+   1. CAPA
+   ============================================================ */
+.l-capa {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: start;
+  gap: var(--gap);
+}
+.l-capa__marca {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  font-size: var(--t-sub);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.l-capa__pe {
+  display: flex;
+  align-items: baseline;
+  gap: 1.4em;
+  flex-wrap: wrap;
+  margin-top: clamp(1rem, 3vh, 3rem);
+}
+
+/* ============================================================
+   2. MARCO — um degrau da linha do tempo
+   ============================================================ */
+.l-marco {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(2rem, 5vw, 6rem);
+  row-gap: var(--gap);
+  align-content: center;
+}
+.l-marco__data { grid-column: 1 / -1; }
+.l-marco__data .scr {
+  font-size: var(--t-sub);
+  letter-spacing: 0.06em;
+  color: var(--cor-ato, var(--blue));
+  font-weight: 500;
+}
+.l-marco__titulo { grid-column: 1; align-self: start; }
+.l-marco__lado {
+  grid-column: 2;
+  align-self: start;
+  padding-top: 0.6em;
+  display: grid;
+  gap: var(--gap);
+  justify-items: start;
+}
+
+/* ============================================================
+   3. PESSOA — o crédito
+   O roteiro inteiro é uma sequência de "alguém apostou em mim".
+   Esse layout existe pra que a pessoa ocupe a tela, não uma
+   bala num bullet point.
+   ============================================================ */
+.l-pessoa {
+  /* A trilha da foto tem largura DEFINIDA, e não `auto`. Com
+     `auto` a coluna se dimensiona pelo conteúdo, o
+     `width: 100%` da foto passa a se referir a uma largura
+     indefinida, e o retrato colapsa pra zero. O `min()` limita
+     pela altura da tela, que é o que mantém a proporção 3:4
+     exata em qualquer projetor. */
+  grid-template-columns: min(36%, calc(64vh * 3 / 4)) minmax(0, 1fr);
+  column-gap: clamp(2.5rem, 6vw, 7rem);
+  align-content: center;
+  align-items: center;
+}
+.l-pessoa__foto {
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  justify-self: start;
+}
+.l-pessoa__texto {
+  display: grid;
+  gap: var(--gap);
+  justify-items: start;
+}
+.l-pessoa__nome {
+  font-size: var(--t-titulo);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+.l-pessoa__papel {
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cor-ato, var(--blue));
+}
+
+/* ============================================================
+   4. DECLARAÇÃO — a frase que carrega o bloco
+   Sem nada além dela na tela. É o layout do wipe.
+   ============================================================ */
+.l-declaracao {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: start;
+  gap: var(--gap);
+}
+.l-declaracao .wipe {
+  font-size: calc(min(var(--t-titulo), calc(56vh * var(--fit, 1) / var(--linhas, 1))) * var(--fw, 1));
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+}
+.l-declaracao--mega .wipe {
+  font-size: calc(min(var(--t-mega), calc(56vh * var(--fit, 1) / var(--linhas, 1))) * var(--fw, 1));
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+}
+.l-declaracao--centro { justify-items: center; text-align: center; }
+/* `justify-items` não é herdado sozinho: sem repetir aqui, a
+   região fica centralizada mas o parágrafo dentro dela encosta
+   na esquerda dela — centralizado em relação a nada. */
+.l-declaracao--centro [data-r] { justify-items: center; }
+.l-fecho [data-r] { justify-items: center; }
+
+/* ============================================================
+   5. HISTÓRIA — narrativa com um número no meio
+   ============================================================ */
+.l-historia {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: clamp(2.5rem, 6vw, 7rem);
+  align-content: center;
+  align-items: center;
+}
+.l-historia__texto { display: grid; gap: var(--gap); justify-items: start; }
+.l-historia__numeros {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(1rem, 3vw, 3rem);
+  justify-self: center;
+}
+.l-historia__n { display: grid; gap: 0.4em; justify-items: center; }
+.l-historia__n .scr {
+  font-size: min(var(--t-titulo), calc(16vh * var(--fit, 1)));
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  color: var(--tinta-3);
+}
+/* Só o número ALVO recebe a cor da marca. Os dois coloridos
+   contariam a mesma história duas vezes, e a história é que um
+   deles é maior que o outro. */
+.l-historia__n--alvo .scr { color: var(--cor-ato, var(--blue)); }
+.l-historia__seta {
+  width: clamp(2rem, 4vw, 5rem);
+  height: 1px;
+  background: var(--linha);
+  align-self: center;
+}
+
+/* ============================================================
+   6. CONSTELAÇÃO — os nomes espalhados que convergem
+
+   A tese do Bloco 1 em imagem: "eu não trouxe conhecimento novo
+   pra cá, eu peguei o que já estava espalhado aqui dentro e
+   juntei tudo num lugar só". Os nomes entram espalhados, um por
+   seta, e no último passo linhas finas puxam todos pra um ponto.
+   ============================================================ */
+.l-nomes { grid-template-columns: minmax(0, 1fr); align-content: center; }
+.constelacao {
+  position: relative;
+  width: 100%;
+  height: 74vh;
+  grid-column: 1 / -1;
+}
+.constelacao__nome {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: clamp(1.3rem, 2.6vw, 3.1rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+/* Nenhum nome é menos nome que outro. Havia um estado tracejado
+   e cinza pros nomes que faltavam confirmar — mas na projeção
+   isso lia como "esse aqui não conta", que é exatamente o
+   contrário do que o slide está dizendo. */
+.constelacao__linhas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.constelacao__linha {
+  fill: none;
+  stroke: var(--cor-ato, var(--blue));
+  stroke-width: 1;
+  opacity: 0.42;
+}
+.constelacao__centro {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  display: grid;
+  gap: 0.5em;
+  justify-items: center;
+  opacity: 0;
+  transition: opacity 0.8s var(--expo) 0.6s;
+}
+.is-convergindo .constelacao__centro { opacity: 1; }
+.constelacao__centro-txt {
+  font-size: clamp(1.1rem, 1.9vw, 2.2rem);
+  font-weight: 500;
+  color: var(--cor-ato, var(--blue));
+  max-width: 16ch;
+  line-height: 1.2;
+}
+
+/* ============================================================
+   7. LISTA — itens que se constroem
+   ============================================================ */
+.l-lista {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  row-gap: clamp(1.5rem, 4vh, 3.5rem);
+  align-content: center;
+}
+.lista { display: grid; gap: clamp(1rem, 2.8vh, 2.4rem); align-content: start; }
+.lista--tres { grid-template-columns: repeat(3, 1fr); column-gap: clamp(2rem, 4vw, 5rem); }
+.lista__item { display: grid; gap: 0.6em; align-content: start; }
+.lista__n {
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  letter-spacing: 0.2em;
+  color: var(--cor-ato, var(--blue));
+}
+.lista__t { font-size: var(--t-sub); line-height: 1.1; letter-spacing: -0.02em; }
+.lista__d { font-size: var(--t-corpo); color: var(--tinta-2); line-height: 1.4; max-width: 32ch; }
+
+/* Variante em linha única com cruz — para enumerações curtas */
+.lista--linha { grid-auto-flow: column; justify-content: start; gap: clamp(1.5rem, 4vw, 4rem); }
+.lista--linha .lista__item { grid-auto-flow: column; align-items: center; gap: 0.7em; }
+
+/* ============================================================
+   8. VÍDEO — a espiada
+
+   Nunca tela cheia, e isso é a decisão de design mais importante
+   do bloco: o vídeo é uma ISCA pro stand, não a demonstração.
+   Se a plateia vir tudo aqui, não levanta da cadeira. A moldura
+   contida, com o cromo da plataforma rodando em volta, mostra o
+   suficiente pra dar vontade e pouco pra satisfazer.
+   ============================================================ */
+.l-video {
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  column-gap: clamp(2.5rem, 5vw, 6rem);
+  align-content: center;
+  align-items: center;
+}
+.l-video__texto { display: grid; gap: var(--gap); justify-items: start; }
+.l-video__moldura {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  max-height: 66vh;
+  box-shadow: 0 clamp(20px, 3vh, 40px) clamp(40px, 6vh, 90px) rgba(0, 0, 0, 0.35);
+}
+.l-video--largo { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+.l-video--largo .l-video__moldura { width: min(74%, 1180px); }
+.l-video--largo .l-video__texto { justify-items: center; text-align: center; }
+
+/* ============================================================
+   9. LOGOS — a grade de quem validou
+   ============================================================ */
+.l-logos {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr;
+  row-gap: clamp(1.2rem, 3vh, 2.5rem);
+  align-content: center;
+}
+.grade-logos {
+  display: grid;
+  gap: clamp(1rem, 2vw, 2.2rem);
+  align-content: start;
+}
+.grade-logos--2 { grid-template-columns: repeat(2, 1fr); }
+.grade-logos--3 { grid-template-columns: repeat(3, 1fr); }
+.grade-logos--4 { grid-template-columns: repeat(4, 1fr); }
+.logo-slot {
+  aspect-ratio: 5 / 2;
+  border-radius: 14px;
+}
+.logo-slot .moldura__vazia { border-radius: 14px; gap: 0.35em; }
+.logo-slot img { object-fit: contain; padding: clamp(0.8rem, 1.6vw, 1.8rem); }
+
+/* Foto no lugar de logo.
+
+   O bloco "aparecer" não usa marcas: usa REGISTRO. A plateia
+   lotada do Summit e ele de microfone na Record News provam
+   "a gente foi pra onde tinha gente" de um jeito que um
+   logotipo nunca provaria — logo é o que a empresa diz de si,
+   foto é o que aconteceu. Por isso `cover` e sem respiro
+   interno: a imagem preenche a moldura inteira. */
+.foto-slot { aspect-ratio: 4 / 3; border-radius: 14px; }
+.foto-slot .moldura { border-radius: 14px; }
+.foto-slot img { object-fit: cover; padding: 0; }
+.foto-slot .moldura__vazia { border-radius: 14px; gap: 0.35em; }
+
+/* Legenda embaixo de cada logo — quem é e o que fez */
+.logo-par { display: grid; gap: 0.7em; }
+.logo-par__txt { font-size: var(--t-mini); color: var(--tinta-2); line-height: 1.35; }
+
+/* ============================================================
+   10. CAPÍTULO — a abertura de bloco
+   ============================================================ */
+.l-capitulo {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: start;
+  gap: var(--gap);
+}
+.l-capitulo__n {
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cor-ato, var(--blue));
+}
+.l-capitulo__corpo { max-width: 34ch; }
+
+/* A pergunta "isso é real mesmo?" voltando no Bloco 4.
+
+   Ela vive NO FLUXO, e não posicionada por cima de tudo.
+   Absoluta, caía em cima do título das três respostas — e uma
+   citação ilegível atrás de um título é pior do que citação
+   nenhuma. Como bloco citado, ela abre o slide e o título
+   responde embaixo. */
+.fantasma {
+  font-size: var(--t-sub);
+  color: var(--tinta-3);
+  font-style: italic;
+  border-left: 3px solid var(--cor-ato, var(--blue));
+  padding-left: 0.55em;
+  max-width: none;
+}
+.fantasma .ow { opacity: 0.1; }
+.fantasma.is-revelado .ow, .fantasma.is-imediato .ow { opacity: 0.7; }
+
+/* ============================================================
+   11. TIMELINE COMPLETA — o payoff
+   ============================================================ */
+.l-timeline {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  row-gap: clamp(1.5rem, 4vh, 3rem);
+  align-content: center;
+}
+
+/* ============================================================
+   12. FECHO
+   ============================================================ */
+.l-fecho {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: var(--gap);
+}
+
+/* ============================================================
+   A ESPINHA — a linha do tempo persistente
+
+   Não é slide, é cenário: fica montada durante o Bloco 1
+   inteiro e avança um nó por marco. O roteiro entrega o motivo
+   de graça — "eu abri isso aqui com uma linha do tempo, e em
+   cada marco tem o nome de alguém que resolveu me deixar
+   fazer". Ela some na transição pra Fuse e volta acesa, com os
+   nomes pendurados, no fechamento.
+   ============================================================ */
+.espinha {
+  position: absolute;
+  left: var(--margem);
+  right: var(--margem);
+  bottom: calc(var(--margem-v) * 1.6);
+  height: 18vh;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s var(--expo);
+}
+.espinha.is-visivel { opacity: 1; }
+
+/* O trilho e a linha viva: dois divs, não SVG. Um scaleX com
+   origem à esquerda faz o mesmo desenho progressivo que o
+   stroke-dashoffset de js/curves.js faz no site, sem precisar
+   medir path nem lidar com dasharray sob preserveAspectRatio. */
+.espinha__trilho, .espinha__linha {
+  position: absolute;
+  left: 0; right: 0;
+  top: var(--y-linha, 34%);
+  transform: translateY(-50%);
+  border-radius: 2px;
+}
+.espinha__trilho { height: 1.5px; background: var(--linha); }
+.espinha__linha {
+  height: 2.5px;
+  background: var(--cor-ato, var(--blue));
+  transform: translateY(-50%) scaleX(var(--avanco, 0));
+  transform-origin: left center;
+  transition: transform 1.1s var(--expo);
+}
+
+/* O nó É o ponto. Os rótulos penduram nele por posicionamento
+   absoluto — assim o ponto cai exatamente em cima da linha, em
+   qualquer resolução, sem cálculo. */
+.espinha__no {
+  position: absolute;
+  left: var(--x);
+  top: var(--y-linha, 34%);
+  width: clamp(9px, 0.85vw, 15px);
+  height: clamp(9px, 0.85vw, 15px);
+  transform: translate(-50%, -50%);
+  opacity: 0.3;
+  transition: opacity 0.6s var(--expo);
+}
+.espinha__no.is-aceso { opacity: 1; }
+
+.espinha__ponto {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--tinta-3);
+  transition: background-color 0.5s var(--expo), transform 0.5s var(--expo);
+}
+.espinha__no.is-aceso .espinha__ponto {
+  background: var(--cor-ato, var(--blue));
+  transform: scale(1.3);
+}
+/* O halo pulsando é a camada time-driven do nó aceso */
+.espinha__no.is-aceso .espinha__ponto::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1px solid var(--cor-ato, var(--blue));
+  animation: pulsaNo 2.6s ease-out infinite;
+}
+@keyframes pulsaNo {
+  0%   { transform: scale(0.75); opacity: 0.75; }
+  100% { transform: scale(2.2);  opacity: 0; }
+}
+
+.espinha__rot,
+.espinha__abaixo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 15ch;
+  text-align: center;
+}
+.espinha__abaixo {
+  top: calc(100% + 1em);
+  display: grid;
+  gap: 0.5em;
+  justify-items: center;
+}
+
+.espinha__rot {
+  bottom: calc(100% + 1em);
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+}
+.espinha__no.is-aceso .espinha__rot { color: var(--tinta-2); }
+
+.espinha__cargo {
+  font-size: clamp(0.78rem, 1.05vw, 1.3rem);
+  line-height: 1.25;
+  color: var(--tinta-2);
+  font-weight: 500;
+}
+
+/* O nome da pessoa pendurado no nó — só no fechamento */
+.espinha__credito {
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  letter-spacing: 0.1em;
+  color: var(--cor-ato, var(--blue));
+  opacity: 0;
+  transition: opacity 0.7s var(--expo), transform 0.7s var(--expo);
+}
+.espinha--creditos .espinha__credito { transform: translateY(-8px); }
+.espinha--creditos .espinha__no.is-aceso .espinha__credito {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Na espinha de fechamento os nós ficam maiores e sobem */
+.espinha--creditos { height: 40vh; bottom: calc(var(--margem-v) * 1.4); --y-linha: 30%; }
+
+/* ============================================================
+   MAPA DE SEÇÕES — a saída de emergência do operador (tecla O)
+   ============================================================ */
+.mapa {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: #06060A;
+  padding: clamp(1.5rem, 3vw, 3rem);
+  overflow-y: auto;
+  display: none;
+  color: #FFF;
+}
+.mapa.is-aberto { display: block; }
+.mapa__grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+.mapa__item {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  display: grid;
+  gap: 0.3rem;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.mapa__item:hover { border-color: rgba(255, 255, 255, 0.45); background: rgba(255, 255, 255, 0.06); }
+.mapa__item.is-atual { border-color: var(--green-accent); background: rgba(0, 170, 76, 0.14); }
+.mapa__item-n {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.45);
+}
+.mapa__item-t { font-size: 0.95rem; line-height: 1.25; }
+.mapa__titulo { font-size: 1.4rem; font-weight: 500; }
+.mapa__dica { font-family: var(--mono); font-size: 0.78rem; color: rgba(255, 255, 255, 0.45); margin-top: 0.4rem; }
+.mapa__bloco {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 1.4rem 0 0.2rem;
+  grid-column: 1 / -1;
+}
+
+/* ============================================================
+   MANIFESTO DE MÍDIA — tecla M
+
+   A lista exata do que ainda falta chegar, com nome de arquivo,
+   proporção e resolução mínima. É o que o Danilo copia pra
+   montar o batch de uma vez só no fim.
+   ============================================================ */
+.manifesto {
+  position: fixed;
+  inset: 0;
+  z-index: 96;
+  background: #06060A;
+  padding: clamp(1.5rem, 3vw, 3rem);
+  overflow-y: auto;
+  display: none;
+  color: #FFF;
+}
+.manifesto.is-aberto { display: block; }
+.manifesto pre {
+  font-family: var(--mono);
+  font-size: clamp(0.68rem, 0.9vw, 0.9rem);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  margin-top: 1rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+.manifesto__btn {
+  margin-top: 1.2rem;
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.7em 1.4em;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: none;
+  color: #FFF;
+  cursor: pointer;
+}
+.manifesto__btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+/* ============================================================
+   Telas estreitas — ensaio no notebook, não é o alvo, mas não
+   pode estar quebrado quando ele abrir pra conferir texto.
+   ============================================================ */
+@media (max-aspect-ratio: 1/1), (max-width: 900px) {
+  .l-marco, .l-pessoa, .l-historia, .l-video {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: clamp(1rem, 3vh, 2rem);
+  }
+  .l-marco__titulo, .l-marco__lado { grid-column: 1; }
+  .l-pessoa__foto { max-height: 34vh; aspect-ratio: 4 / 3; }
+  .lista--tres { grid-template-columns: 1fr; }
+  .grade-logos--4, .grade-logos--3 { grid-template-columns: repeat(2, 1fr); }
+  .secao--espinha { padding-bottom: 22vh; }
+}

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-tema="claro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>fuse AIoT · Grupo Nuveto</title>
+  <link rel="icon" type="image/svg+xml" href="../fuse-vertical-normal.svg" />
+
+  <!--
+    NENHUMA REFERÊNCIA EXTERNA. Nem fonte, nem script, nem CDN.
+    Este arquivo tem que abrir com dois cliques num PC sem
+    internet, sem Node e sem nada instalado. Cada link daqui
+    pra fora seria um jeito da apresentação falhar às 14h de
+    uma terça na frente do Grupo inteiro.
+
+    A fonte Inter vive em base64 dentro de css/fontes.css porque
+    o Chrome bloqueia @font-face por CORS em file:// mesmo com o
+    .woff2 na pasta do lado.
+  -->
+  <link rel="stylesheet" href="css/fontes.css" />
+  <link rel="stylesheet" href="css/deck.css" />
+  <link rel="stylesheet" href="css/reveals.css" />
+  <link rel="stylesheet" href="css/layouts.css" />
+</head>
+<body>
+
+  <div class="deck" id="deck" data-tema="claro">
+    <!-- a camada que nunca para: curva desenhando e respirando -->
+    <svg class="curva" id="curva" aria-hidden="true"></svg>
+
+    <!-- as 47 seções são montadas aqui por js/deck.js -->
+    <div class="palco" id="palco"></div>
+
+    <!-- a linha do tempo, montada por js/cenario.js -->
+    <div class="espinha" id="espinha" aria-hidden="true"></div>
+  </div>
+
+  <div class="progresso"><div class="progresso__barra"></div></div>
+  <div class="marca">fuse AIoT</div>
+
+  <!-- a barra que vira o ato -->
+  <div class="virada" id="virada" aria-hidden="true"></div>
+  <div class="blackout" id="blackout" aria-hidden="true"></div>
+
+  <!-- mapa de seções: a saída de emergência do operador (tecla O) -->
+  <div class="mapa" id="mapa">
+    <div class="mapa__titulo">Ir para</div>
+    <div class="mapa__dica">clique numa seção · ESC ou O pra fechar</div>
+    <div class="mapa__grade"></div>
+  </div>
+
+  <!-- manifesto de mídia: o que ainda falta chegar (tecla M) -->
+  <div class="manifesto" id="manifesto">
+    <div class="mapa__titulo">Mídia que falta</div>
+    <div class="mapa__dica">largue os arquivos em apresentacao/midia/ com estes nomes exatos · ESC ou M pra fechar</div>
+    <pre></pre>
+    <button class="manifesto__btn" type="button">copiar lista</button>
+  </div>
+
+  <script src="js/reveals.js"></script>
+  <script src="js/cenario.js"></script>
+  <script src="js/canal.js"></script>
+  <script src="js/roteiro.js"></script>
+  <script src="js/deck.js"></script>
+</body>
+</html>

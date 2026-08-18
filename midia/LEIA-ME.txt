@@ -1,0 +1,16 @@
+Largue aqui os 18 arquivos de mídia da apresentação.
+
+A lista exata — nome, tipo, proporção e resolução mínima — está no
+próprio deck: abra o index.html e aperte a tecla M. Tem botão de
+copiar.
+
+Os nomes precisam bater exatamente. Assim que o arquivo existir, ele
+entra sozinho no lugar da moldura tracejada, com um fade. Não precisa
+mexer em código nenhum.
+
+  3 vídeos ..... 16:9, mín. 1920x1080, sem áudio, feitos pra rodar em loop
+  4 fotos ...... 3:4, mín. 900x1200
+  11 logos ..... 5:2, mín. 600x240, PNG com fundo transparente
+
+Os vídeos aparecem em moldura contida, nunca em tela cheia: eles são
+isca pro stand, não a demonstração.

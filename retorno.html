@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Retorno · fuse AIoT</title>
+  <link rel="stylesheet" href="css/fontes.css" />
+  <link rel="stylesheet" href="css/retorno.css" />
+</head>
+<body>
+
+  <header class="topo">
+    <div class="topo__bloco" id="bloco">—</div>
+    <div class="topo__dir">
+      <div class="contador" id="contador">—</div>
+      <div class="checkpoint" id="checkpoint"></div>
+      <div class="relogio is-parado" id="relogio">00:00</div>
+    </div>
+  </header>
+
+  <main class="corpo" id="corpo">
+    <section class="coluna coluna--principal">
+      <div class="rot">na tela agora</div>
+      <div class="agora__t" id="agora-t">—</div>
+      <div class="agora__d" id="agora-d"></div>
+
+      <div class="deixa">
+        <div class="rot deixa__rot">aperte a seta quando ele disser</div>
+        <div class="deixa__txt is-vazia" id="deixa">—</div>
+      </div>
+
+      <div class="aviso" id="aviso"></div>
+    </section>
+
+    <aside class="coluna">
+      <div class="rot">próximo</div>
+      <div class="prox">
+        <div class="prox__tag" id="prox-tag"></div>
+        <div class="prox__t" id="prox-t">—</div>
+        <div class="prox__d" id="prox-d"></div>
+      </div>
+
+      <div class="teclas">
+        <b>→ ␣ PgDn</b> avança<br />
+        <b>←   PgUp</b> volta<br />
+        <b>T</b> liga/pausa o cronômetro<br />
+        <b>Shift+T</b> zera o cronômetro<br />
+        <span style="opacity:.7">as setas funcionam desta janela também</span>
+      </div>
+    </aside>
+  </main>
+
+  <script src="js/roteiro.js"></script>
+  <script src="js/canal.js"></script>
+  <script>
+  /* ============================================================
+     A tela do operador.
+
+     Ela não decide nada: só escuta o estado que o deck publica a
+     cada passo e mostra três coisas — o que está projetado, o
+     que vem, e a DEIXA que autoriza o próximo aperto.
+
+     O cronômetro é dela e não do deck de propósito. O deck pode
+     ser recarregado no meio do ensaio sem zerar o tempo, e o
+     tempo é a única coisa aqui que não dá pra recuperar.
+     ============================================================ */
+  (function () {
+    'use strict';
+
+    var el = function (id) { return document.getElementById(id); };
+
+    /* ---------- os checkpoints do roteiro ----------
+       Minuto em que cada bloco DEVERIA estar terminado.
+       Fonte: as notas do roteiro_fuse_v5.md. */
+    var CHECKPOINTS = [
+      { min: 7.5,  bloco: 1, nome: 'trajetória' },
+      { min: 10,   bloco: 2, nome: 'problema' },
+      { min: 14,   bloco: 3, nome: 'Iris' },
+      { min: 18,   bloco: 4, nome: 'semestre' },
+      { min: 22.5, bloco: 5, nome: 'como construímos' },
+      { min: 24,   bloco: 6, nome: 'fecho' }
+    ];
+
+    var t0 = null, pausadoEm = null, rodando = false;
+    var estado = null;
+
+    /* ---------- cronômetro ---------- */
+    function decorrido() {
+      if (t0 === null) return 0;
+      if (!rodando && pausadoEm !== null) return pausadoEm - t0;
+      return Date.now() - t0;
+    }
+
+    function mmss(ms) {
+      var s = Math.max(0, Math.floor(ms / 1000));
+      return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+
+    function tique() {
+      var ms = decorrido();
+      var r = el('relogio');
+      r.textContent = mmss(ms);
+      r.classList.toggle('is-parado', !rodando);
+
+      // Qual checkpoint vale agora: o do bloco em que ele está.
+      var alvo = null;
+      if (estado) {
+        for (var i = 0; i < CHECKPOINTS.length; i++) {
+          if (CHECKPOINTS[i].bloco >= estado.bloco) { alvo = CHECKPOINTS[i]; break; }
+        }
+      }
+      if (!alvo) alvo = CHECKPOINTS[CHECKPOINTS.length - 1];
+
+      var limite = alvo.min * 60000;
+      var sobra = limite - ms;
+      el('checkpoint').innerHTML =
+        alvo.nome + ' até ' + mmss(limite) + '<br />' +
+        (rodando
+          ? (sobra >= 0 ? 'faltam ' + mmss(sobra) : 'passou ' + mmss(-sobra))
+          : 'cronômetro parado');
+
+      r.classList.toggle('is-atrasado', rodando && sobra < 60000 && sobra >= 0);
+      r.classList.toggle('is-estourado', rodando && sobra < 0);
+    }
+    setInterval(tique, 250);
+
+    /* ---------- recebe o estado do deck ---------- */
+    function pintar(e) {
+      estado = e;
+
+      // O cronômetro parte sozinho quando ele sai da capa: é o
+      // instante real em que a apresentação começou, e ninguém
+      // vai lembrar de apertar T na hora.
+      if (!rodando && t0 === null && e.iSecao > 0) {
+        t0 = Date.now(); rodando = true;
+      }
+
+      el('bloco').textContent = e.blocoNome || '';
+      el('bloco').style.setProperty('--cor', e.cor);
+      document.documentElement.style.setProperty('--cor', e.cor);
+
+      el('contador').innerHTML =
+        'seção <b>' + (e.iSecao + 1) + '</b>/' + e.total +
+        '  ·  passo <b>' + (e.iPasso + 1) + '</b>/' + e.nPassos;
+
+      el('agora-t').textContent = e.agora || '—';
+      el('agora-d').textContent = e.agoraDetalhe || '';
+
+      var d = el('deixa');
+      if (e.fim) {
+        d.textContent = 'fim da apresentação';
+        d.classList.add('is-vazia');
+      } else if (e.deixa) {
+        d.textContent = e.deixa;
+        d.classList.remove('is-vazia');
+      } else {
+        d.textContent = 'sem deixa anotada — avance no ritmo dele';
+        d.classList.add('is-vazia');
+      }
+
+      el('prox-t').textContent = e.proximo || 'fim';
+      el('prox-d').textContent = e.proximoDetalhe || '';
+      var tag = el('prox-tag');
+      if (e.proximaSecao) {
+        tag.textContent = 'troca de seção';
+        tag.className = 'prox__tag prox__tag--secao';
+      } else {
+        tag.textContent = 'mesmo slide, próximo passo';
+        tag.className = 'prox__tag';
+      }
+
+      el('aviso').textContent = e.pausa || '';
+      tique();
+    }
+
+    window.Canal.ouvir(pintar);
+
+    /* ---------- teclado ----------
+       As setas valem daqui também: o operador pode estar com o
+       foco nesta janela sem perceber, e uma seta que não faz
+       nada no meio da apresentação é pânico garantido. */
+    document.addEventListener('keydown', function (ev) {
+      var k = ev.key;
+      if (k === 'ArrowRight' || k === 'ArrowDown' || k === ' ' || k === 'PageDown' || k === 'Enter') {
+        window.Canal.mandarTecla('proximo'); ev.preventDefault();
+      } else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace') {
+        window.Canal.mandarTecla('anterior'); ev.preventDefault();
+      } else if (k === 'T') {
+        t0 = null; pausadoEm = null; rodando = false; tique(); ev.preventDefault();
+      } else if (k === 't') {
+        if (t0 === null) { t0 = Date.now(); rodando = true; }
+        else if (rodando) { pausadoEm = Date.now(); rodando = false; }
+        else { t0 += Date.now() - pausadoEm; pausadoEm = null; rodando = true; }
+        tique(); ev.preventDefault();
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

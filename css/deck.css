@@ -1,0 +1,486 @@
+/* ============================================================
+   DECK — base, tokens, temas e cenário
+
+   Os tokens são COPIADOS de css/variables.css em vez de
+   importados de propósito: o base.css do site tem um bloco
+   prefers-reduced-motion que zera toda animação, e num deck as
+   animações SÃO o conteúdo. Se o PC do evento estiver com a
+   flag ligada e a gente importasse o site, a apresentação
+   inteira viraria texto estático.
+   ============================================================ */
+
+:root {
+  /* --- Marca (idêntico a css/variables.css) --- */
+  --blue: #3436B1;
+  --blue-dark: #202AA2;
+  --red: #CF2A2E;
+  --orange: #F47D4E;
+  --green: #61B65D;
+  --green-accent: #00AA4C;
+
+  --papel: #F5F5F7;
+  --papel-fundo: #EDEDF0;
+  --noite: #0A0A0F;
+
+  /* --- Tipografia --- */
+  --fonte: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Consolas, monospace;
+
+  /* Escala pensada pra PROJEÇÃO: o fundo da sala pode estar a 20 m.
+     O menor texto do deck (kicker) fica em ~21px num 1080p.
+
+     Cada tamanho é min(vw, vh) e não só vw. Num site isso não
+     importa porque a página rola; num deck a tela é uma caixa
+     fechada e tipografia dimensionada só pela LARGURA estoura
+     pra fora por cima assim que a frase tem três linhas. */
+  --t-mega-b:   clamp(3rem,   min(11.5vw, 20vh), 15rem);
+  --t-titulo-b: clamp(2.4rem, min(6.4vw,  12vh), 8rem);
+  --t-sub-b:    clamp(1.5rem, min(3vw,    5.2vh), 3.6rem);
+  --t-corpo-b:  clamp(1.1rem, min(1.9vw,  3.2vh), 2.3rem);
+  --t-mini-b:   clamp(0.95rem, min(1.4vw, 2.3vh), 1.7rem);
+  --t-kicker-b: clamp(0.72rem, min(1vw,   1.7vh), 1.2rem);
+
+  /* Fora das seções (marca, chrome) o token é o valor cru. */
+  --t-mega: var(--t-mega-b);
+  --t-titulo: var(--t-titulo-b);
+  --t-sub: var(--t-sub-b);
+  --t-corpo: var(--t-corpo-b);
+  --t-mini: var(--t-mini-b);
+  --t-kicker: var(--t-kicker-b);
+
+  /* Margem de segurança: projetor come borda (overscan). */
+  --margem: clamp(2.5rem, 5.5vw, 8rem);
+  --margem-v: clamp(2rem, 4.5vh, 5rem);
+
+  /* --- Curvas --- */
+  --expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --quad-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --quad-inout: cubic-bezier(0.45, 0, 0.55, 1);
+
+  --raio: 20px;
+}
+
+/* --- Tema claro (Atos I e III) --- */
+[data-tema="claro"] {
+  --fundo: var(--papel);
+  --fundo-2: var(--papel-fundo);
+  --tinta: #1A1A1A;
+  --tinta-2: #444444;
+  --tinta-3: #8A8A90;
+  --linha: rgba(26, 26, 26, 0.14);
+  --veu: rgba(26, 26, 26, 0.05);
+}
+
+/* --- Tema escuro (Atos II e IV) --- */
+[data-tema="escuro"] {
+  --fundo: var(--noite);
+  --fundo-2: #14141B;
+  --tinta: #FFFFFF;
+  --tinta-2: #C4C4CC;
+  --tinta-3: #6E6E7A;
+  --linha: rgba(255, 255, 255, 0.16);
+  --veu: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================================
+   Reset
+   ============================================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;              /* deck não rola, nunca */
+  background: var(--noite);      /* letterbox fora do palco */
+}
+
+body {
+  font-family: var(--fonte);
+  font-weight: 400;
+  color: var(--tinta);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  cursor: none;                  /* o mouse some — é uma projeção */
+}
+body.mostra-cursor { cursor: default; }
+
+::selection { background: var(--blue); color: #FFF; }
+
+/* ============================================================
+   Palco
+   ============================================================ */
+.deck {
+  position: fixed;
+  inset: 0;
+  background: var(--fundo);
+  overflow: hidden;
+}
+
+/* z-index explícito nos dois. `.palco` é position:absolute com
+   z-index auto, o que já o coloca na camada dos posicionados —
+   e a curva, com z-index 1, passava POR CIMA do texto. Numa
+   seção escura, a curva vermelha cruzando a frase é a primeira
+   coisa que o olho encontra. */
+.palco { position: absolute; inset: 0; z-index: 1; }
+
+/* ── O FATOR DE AJUSTE ──────────────────────────────────────
+   Dentro de uma seção todo tamanho de texto é multiplicado por
+   --fit, que o deck.js mede e escreve seção por seção depois de
+   montar.
+
+   Por que isso existe: num deck a tela é uma caixa fechada, e o
+   texto que não cabe não rola — ele some pra fora por cima. A
+   alternativa seria eu calibrar 47 seções na mão e rezar. Mas
+   quem vai editar este roteiro é o Danilo, na véspera, e uma
+   frase três palavras mais longa não pode quebrar o slide. Com
+   o ajuste automático, o pior caso é o texto ficar um pouco
+   menor — nunca invisível.
+   ─────────────────────────────────────────────────────────── */
+.secao {
+  --fit: 1;
+  --t-mega:   calc(var(--t-mega-b)   * var(--fit));
+  --t-titulo: calc(var(--t-titulo-b) * var(--fit));
+  --t-sub:    calc(var(--t-sub-b)    * var(--fit));
+  --t-corpo:  calc(var(--t-corpo-b)  * var(--fit));
+  --t-mini:   calc(var(--t-mini-b)   * var(--fit));
+  --t-kicker: calc(var(--t-kicker-b) * var(--fit));
+  --gap: calc(clamp(0.7rem, 1.9vh, 1.7rem) * var(--fit));
+
+  position: absolute;
+  inset: 0;
+  padding: var(--margem-v) var(--margem);
+  display: grid;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s linear, visibility 0s linear 0.18s;
+}
+
+.secao.is-ativa {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.18s linear, visibility 0s;
+}
+
+/* Enquanto a seção sai, ela continua opaca: quem some é cada
+   elemento, com o próprio movimento. Um crossfade por cima da
+   animação de saída borraria as duas coisas numa só papa. */
+.secao.is-ativa.is-saindo {
+  opacity: 1;
+  transition: none;
+}
+
+/* ============================================================
+   Chrome — o mínimo que a plateia vê
+
+   Uma hairline de progresso na borda de baixo. Num talk de 24
+   min ela responde sozinha a "quanto falta ainda", que é a
+   pergunta que a plateia faz quando o palestrante não responde.
+   ============================================================ */
+.progresso {
+  position: fixed;
+  left: 0; bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--veu);
+  z-index: 60;
+  transition: opacity 0.3s;
+}
+.progresso.is-oculta { opacity: 0; }
+
+.progresso__barra {
+  height: 100%;
+  width: 0%;
+  background: var(--cor-ato, var(--blue));
+  transition: width 0.5s var(--expo), background-color 0.6s ease;
+}
+
+/* Marca da fuse, canto inferior direito. Discreta. */
+.marca {
+  position: fixed;
+  right: var(--margem);
+  bottom: calc(var(--margem-v) * 0.55);
+  font-size: var(--t-kicker);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+  z-index: 55;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.marca.is-oculta { opacity: 0; }
+
+/* ============================================================
+   A VIRADA DE ATO
+
+   A barra do wipe do /proof, em escala de tela inteira: ela
+   cobre o mundo da esquerda pra direita, o fundo troca embaixo
+   dela, e ela recolhe pela direita entregando o ato novo.
+   O mesmo gesto que revela uma frase, revelando um ato.
+   ============================================================ */
+.virada {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--cor-virada, var(--red));
+}
+
+/* Um único keyframe pros dois tempos do gesto. Em duas animações
+   separadas existe um frame entre remover a primeira e aplicar a
+   segunda em que a barra volta a scaleX(0) — um flash do ato
+   antigo bem no meio da virada. Com uma animação só, a troca de
+   origem acontece dentro da própria timeline e não tem costura.
+   O mundo troca embaixo da barra aos 42% (~480ms). */
+.virada.is-virando { animation: virada 1.15s var(--quad-inout) forwards; }
+
+@keyframes virada {
+  0%     { transform: scaleX(0); transform-origin: left center; }
+  42%    { transform: scaleX(1); transform-origin: left center; }
+  42.01% { transform: scaleX(1); transform-origin: right center; }
+  100%   { transform: scaleX(0); transform-origin: right center; }
+}
+
+/* ============================================================
+   Blackout — tecla B. Quando ele quer a sala olhando pra ele.
+   ============================================================ */
+.blackout {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s var(--quad-inout);
+}
+.blackout.is-ativo { opacity: 1; }
+
+/* ============================================================
+   Curva decorativa — a camada time-driven
+
+   O reference/12-animation-principles.md exige que SEMPRE haja
+   pelo menos duas camadas de animação na tela. Entre um passo e
+   outro o deck ficaria congelado; a curva respirando é o que
+   mantém o quadro vivo enquanto ele fala.
+   ============================================================ */
+.curva {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.curva__path {
+  fill: none;
+  stroke: var(--cor-ato, var(--blue));
+  stroke-width: 1.5;
+  opacity: 0.3;
+  stroke-linecap: round;
+}
+
+/* ============================================================
+   Peças tipográficas comuns
+   ============================================================ */
+.kicker {
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+}
+.kicker--cor { color: var(--cor-ato, var(--blue)); }
+
+.titulo {
+  font-size: var(--t-titulo);
+  font-weight: 400;
+  line-height: 0.94;
+  letter-spacing: -0.025em;
+}
+
+.mega {
+  font-size: var(--t-mega);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+}
+
+.corpo {
+  font-size: var(--t-corpo);
+  line-height: 1.42;
+  color: var(--tinta-2);
+  max-width: 26ch;
+}
+.corpo--largo { max-width: 42ch; }
+
+.sub {
+  font-size: var(--t-sub);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.mini {
+  font-size: var(--t-mini);
+  line-height: 1.4;
+  color: var(--tinta-3);
+}
+
+/* Cruz decorativa do site — pontuação visual */
+.cruz {
+  width: 1em; height: 1em;
+  font-size: var(--t-sub);
+  color: var(--cor-ato, var(--blue));
+  position: relative;
+  flex: none;
+}
+.cruz::before, .cruz::after {
+  content: '';
+  position: absolute;
+  background: currentColor;
+}
+.cruz::before { left: 50%; top: 0; width: 1.5px; height: 100%; transform: translateX(-50%); }
+.cruz::after  { top: 50%; left: 0; height: 1.5px; width: 100%; transform: translateY(-50%); }
+
+/* ============================================================
+   Moldura de mídia — placeholder e arquivo final
+
+   A moldura vazia tem o MESMO peso visual do arquivo final, com
+   a especificação escrita dentro. Assim o layout já está
+   resolvido antes de a mídia existir: trocar é largar o arquivo
+   na pasta midia/, sem tocar em layout.
+   ============================================================ */
+.moldura {
+  position: relative;
+  border-radius: var(--raio);
+  overflow: hidden;
+  background: var(--fundo-2);
+}
+
+.moldura__vazia {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  padding: 1.2em;
+  text-align: center;
+  border: 2px dashed var(--linha);
+  border-radius: var(--raio);
+  color: var(--tinta-3);
+}
+.moldura__tipo {
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cor-ato, var(--blue));
+}
+.moldura__nome {
+  font-size: var(--t-mini);
+  font-weight: 500;
+  color: var(--tinta-2);
+  line-height: 1.25;
+}
+.moldura__spec {
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  opacity: 0.7;
+  line-height: 1.6;
+  white-space: pre-line;   /* a spec quebra onde o 
+ manda */
+}
+
+/* A mídia nasce invisível e só aparece quando carrega. Enquanto
+   o arquivo não existe, um <img> quebrado desenharia o texto do
+   alt e o ícone de imagem faltando POR CIMA da moldura de
+   especificação — dois placeholders disputando o mesmo espaço.
+   Quando o arquivo chega, ele entra em fade e a moldura sai. */
+.moldura img, .moldura video {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.5s var(--expo);
+}
+.moldura img.is-pronta, .moldura video.is-pronta { opacity: 1; }
+
+/* --- Cromo vivo do dt-stage: o que faz o vídeo parecer a
+       plataforma rodando de verdade, e não um arquivo. --- */
+.moldura--viva { background: #05050A; border: 1px solid rgba(255, 255, 255, 0.1); }
+
+.moldura__barra {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: clamp(28px, 2.6vw, 44px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1em;
+  background: rgba(10, 10, 15, 0.86);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  font-family: var(--mono);
+  font-size: clamp(0.6rem, 0.78vw, 0.95rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.moldura__marca { display: flex; align-items: center; gap: 0.7em; color: rgba(255, 255, 255, 0.85); }
+.moldura__dot {
+  width: 0.55em; height: 0.55em;
+  border-radius: 50%;
+  background: var(--green-accent);
+  animation: pulsaDot 2s ease-in-out infinite;
+}
+@keyframes pulsaDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.8); }
+}
+.moldura__badge {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 0.25em 0.8em;
+}
+.moldura__meta { display: flex; align-items: center; gap: 1em; }
+
+/* Vinheta: escurece a borda do vídeo pra ele se acomodar na moldura */
+.moldura__vinheta {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow: inset 0 0 clamp(40px, 6vw, 90px) rgba(0, 0, 0, 0.55);
+}
+
+/* A legenda que manda a plateia pro Stand. É o objetivo do vídeo. */
+.stand-cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7em;
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cor-ato, var(--blue));
+}
+.stand-cue__seta {
+  width: 2.8em; height: 1px;
+  background: currentColor;
+  position: relative;
+}
+.stand-cue__seta::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 50%;
+  width: 0.5em; height: 0.5em;
+  border-top: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  transform: translateY(-50%) rotate(45deg);
+}

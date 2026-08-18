@@ -1,0 +1,409 @@
+/* ============================================================
+   OS CINCO MOVIMENTOS
+
+   Cada animação do deck tem UM trabalho. Essa é a regra que
+   segura 47 seções sem virar carnaval: quando a plateia vê a
+   barra colorida passar, ela já sabe que vem uma frase que
+   importa. Quando vê a máscara subir, sabe que é um título.
+   Consistência de significado é o que transforma decoração em
+   linguagem.
+
+     A  word reveal .... títulos            (css/base.css do site)
+     B  opacity word ... corpo / narração   (css/base.css do site)
+     C  wipe de barra ... frases de impacto (proof/WipeReveal.tsx)
+     D  scramble ....... datas e números    (js/text-animations.js)
+     E  slot reveal .... nomes de pessoas   (js/text-animations.js)
+
+   A, B e C são @keyframes puros. D e E precisam de JS porque
+   mexem no conteúdo caractere a caractere — moram em reveals.js.
+
+   O ESTADO INICIAL de tudo aqui é "escondido", e quem revela é
+   a classe .is-revelado. A classe .is-imediato entrega o estado
+   final SEM animação: é o que faz voltar de seção não replayar
+   e o que faz o operador nervoso poder marretar a seta sem o
+   deck engasgar.
+   ============================================================ */
+
+/* Todo elemento que é um passo começa fora da tela do olho.
+
+   --atraso é escrito pelo deck.js: a posição do elemento dentro
+   do grupo que aquela seta revelou. Uma seta traz cinco
+   elementos, e eles entram em cascata de 200 em 200ms em vez de
+   todos no mesmo frame. É o que preserva a sensação de coisa se
+   montando sem cobrar uma tecla por elemento. */
+[data-passo] { --i: 0; --atraso: 0ms; }
+
+/* ============================================================
+   A — WORD REVEAL (máscara de recorte)
+   Origem: css/base.css:250-284
+   ============================================================ */
+.wr {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  /* Estende a área de recorte pra descendente (g, p, q, ç) não
+     ser cortada, e puxa o layout de volta pra não alterar a
+     entrelinha. Mesmo truque do site. */
+  padding-bottom: 0.26em;
+  margin-bottom: -0.26em;
+}
+
+.wr__i {
+  display: inline-block;
+  transform-origin: left bottom;
+  transform: translateY(110%) rotate(12deg);
+  opacity: 0;
+}
+
+.is-revelado .wr__i {
+  animation: wrEntra 1.2s var(--expo) forwards;
+  animation-delay: calc(var(--atraso, 0ms) + var(--i) * 80ms);
+}
+
+@keyframes wrEntra {
+  from { transform: translateY(110%) rotate(12deg); opacity: 0; }
+  to   { transform: translateY(0) rotate(0deg);     opacity: 1; }
+}
+
+.is-imediato .wr__i {
+  animation: none;
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
+}
+
+/* ============================================================
+   B — OPACITY WORD (corpo de texto)
+   Origem: css/base.css:290-299
+   ============================================================ */
+.ow {
+  display: inline-block;
+  opacity: 0.12;
+  transition: opacity 0.6s var(--expo);
+  transition-delay: calc(var(--atraso, 0ms) + var(--i) * 15ms);
+}
+.is-revelado .ow { opacity: 1; }
+.is-imediato .ow { transition: none; opacity: 1; }
+
+/* ============================================================
+   C — WIPE DE BARRA
+   Origem: proof/components/primitives/WipeReveal.tsx
+
+   A linha abre da esquerda com clip-path enquanto uma barra
+   colorida recolhe pela direita atrás dela — marca-texto
+   passando e revelando o que estava embaixo.
+
+   Os quatro números são os do original: 0.6s de duração, 0.15s
+   de stagger por linha, 0.3s de atraso da barra em relação à
+   linha, ease-out na linha e ease-in-out na barra. A barra só
+   começa a recolher depois que a linha já abriu metade.
+
+   Diferença: o original usa SplitText pra achar as linhas. Aqui
+   as linhas são declaradas à mão no roteiro.js, o que dá
+   controle tipográfico melhor num deck — e mata a dependência
+   de um plugin pago do GSAP.
+   ============================================================ */
+.wipe { display: block; }
+
+.wipe__l {
+  position: relative;
+  display: block;
+  width: fit-content;
+  /* O recorte é só HORIZONTAL. Com `inset(0 ...)` a caixa é
+     cortada rente em cima e embaixo, e em corpo grande com
+     entrelinha 0.96 o rabo do g, do p e do q fica de fora dela
+     — o wipe passava e devolvia as descendentes decepadas. Os
+     -0.3em folgam a área vertical sem tocar no gesto, que só
+     acontece na horizontal. */
+  clip-path: inset(-0.3em 100% -0.3em 0);
+  /* A quebra de linha aqui é DECISÃO, tomada no roteiro.js. Se
+     o navegador puder quebrar sozinho, a frase que mais importa
+     ganha uma órfã bem no meio — e a barra, que é um retângulo
+     por linha declarada, passa a cobrir duas linhas visuais.
+     Sem quebra automática, o deck.js mede e diminui a fonte até
+     a linha declarada caber inteira. */
+  white-space: nowrap;
+}
+
+/* Só durante a medição do deck.js. A região que contém o wipe
+   se dimensiona pelo próprio conteúdo (justify-self: start), o
+   que significa que, com nowrap, ela cresce junto com a linha
+   que transbordou — e perguntar a largura dela devolveria a
+   largura da própria linha, sempre. Deixando quebrar por um
+   frame, a região volta a valer o espaço REAL disponível, que é
+   o número que a conta precisa. */
+.secao.medindo .wipe__l { white-space: normal; }
+
+.is-revelado .wipe__l {
+  animation: wipeAbre 0.6s var(--quad-out) forwards;
+  animation-delay: calc(var(--atraso, 0ms) + var(--i) * 150ms);
+}
+
+@keyframes wipeAbre {
+  from { clip-path: inset(-0.3em 100% -0.3em 0); }
+  to   { clip-path: inset(-0.3em 0 -0.3em 0); }
+}
+
+.wipe__b {
+  position: absolute;
+  inset: -0.05em -0.09em;
+  z-index: 2;
+  background: var(--cor-wipe, var(--cor-ato, var(--blue)));
+  transform-origin: right center;
+  pointer-events: none;
+}
+
+.is-revelado .wipe__b {
+  animation: wipeBarra 0.6s var(--quad-inout) forwards;
+  animation-delay: calc(var(--atraso, 0ms) + var(--i) * 150ms + 300ms);
+}
+
+@keyframes wipeBarra {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+.is-imediato .wipe__l { animation: none; clip-path: inset(-0.3em 0 -0.3em 0); }
+.is-imediato .wipe__b { animation: none; transform: scaleX(0); }
+
+/* ============================================================
+   D — SCRAMBLE (datas, números, kickers)
+   Origem: js/text-animations.js:79-130 — 40 char/s, zona de 5
+
+   Em monoespaçada por necessidade, não por estilo: numa fonte
+   proporcional os caracteres aleatórios têm larguras diferentes
+   do texto final e a linha PULA enquanto embaralha. Numa data
+   grande no meio do slide isso é insuportável.
+   ============================================================ */
+.scr {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+  display: inline-block;
+  opacity: 0;
+  transition: opacity 0.12s linear;
+}
+.is-revelado .scr, .is-imediato .scr { opacity: 1; }
+
+/* ============================================================
+   E — SLOT REVEAL (nomes de pessoas)
+   Origem: js/text-animations.js:138-239
+
+   Cada caractere sobe de 0.8em com stagger em cosseno e
+   expoInOut. O nome "pousa" como numa placa de aeroporto. O JS
+   toca o estado inicial; a animação por frame mora em
+   reveals.js porque o stagger não é linear e o CSS não sabe
+   fazer cosseno.
+   ============================================================ */
+.slot { display: inline-block; }
+/* Antes de animar, o slot guarda o texto final em texto puro —
+   e texto puro é VISÍVEL. Sem isto o nome aparece inteiro por um
+   frame e só então se desmonta pra pousar letra a letra. */
+[data-passo]:not(.is-revelado):not(.is-imediato) .slot { opacity: 0; }
+.slot__c {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.8em);
+  will-change: transform, opacity;
+}
+.is-imediato .slot__c { opacity: 1; transform: translateY(0); }
+
+/* ============================================================
+   SURGE — entrada genérica
+
+   Para molduras de mídia, blocos, itens de lista: tudo que não
+   é texto. Sobe 40px com expo.out, que é a curva que o site usa
+   em toda entrada (reference/12-animation-principles.md).
+
+   Os seletores vêm em par — `.is-revelado.surge` E
+   `.is-revelado .surge` — porque .surge às vezes está NO próprio
+   elemento do passo (uma moldura, um item de lista) e às vezes
+   num filho. Só a forma descendente deixaria a moldura invisível
+   pra sempre, que é exatamente o bug que isto conserta.
+   ============================================================ */
+.surge {
+  opacity: 0;
+  transform: translateY(40px);
+}
+.is-revelado.surge, .is-revelado .surge {
+  animation: surgeEntra 0.9s var(--expo) forwards;
+  animation-delay: calc(var(--atraso, 0ms) + var(--i) * 90ms);
+}
+@keyframes surgeEntra {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.is-imediato.surge, .is-imediato .surge { animation: none; opacity: 1; transform: none; }
+
+/* Variante que cresce em vez de subir — para números e selos */
+.surge--escala { transform: scale(0.9); }
+.is-revelado.surge--escala, .is-revelado .surge--escala { animation-name: surgeEscala; }
+@keyframes surgeEscala {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.is-imediato.surge--escala, .is-imediato .surge--escala { transform: scale(1); }
+
+/* Variante que abre a largura — para réguas e divisores */
+.regua {
+  height: 1px;
+  background: var(--linha);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.is-revelado.regua, .is-revelado .regua {
+  animation: reguaAbre 0.8s var(--quad-out) forwards;
+  animation-delay: calc(var(--atraso, 0ms) + var(--i) * 90ms);
+}
+@keyframes reguaAbre {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.is-imediato.regua, .is-imediato .regua { animation: none; transform: scaleX(1); }
+
+
+/* ============================================================
+   A SAÍDA
+
+   O site da fuse não tem animação de saída, e está certo: numa
+   página que rola, o conteúdo sai porque o scroll o levou
+   embora. Num deck a moldura é a mesma o tempo todo — sem
+   saída, o slide velho pisca e some, e o corte lê como falha de
+   vídeo, não como decisão.
+
+   ── CADA ELEMENTO TEM A SUA VEZ ────────────────────────────
+   A saída não é um fade coletivo: é uma sequência. O deck.js
+   escreve `--sai-atraso` em cada elemento e a ordem é LIFO —
+   o último que entrou é o primeiro que sai.
+
+   Isso não é capricho de ordenação, é o que a leitura pede. No
+   slide "Perfeccionismo e empatia levada ao extremo", primeiro
+   vai embora a frase grande; só depois o kicker que a
+   apresentou, junto com a curva. Tirar o rótulo antes da coisa
+   rotulada deixaria um título órfão no ar.
+
+   A saída inteira leva de 2 a 6 segundos conforme o número de
+   elementos, e depois disso o deck ainda espera meio segundo
+   antes de trazer o próximo slide. Esse tempo é o respiro do
+   palestrante — foi pedido, e é onde ele troca de assunto.
+
+   ── DIREÇÃO ────────────────────────────────────────────────
+   Tudo continua o movimento que já estava fazendo. O texto
+   entrou de baixo subindo, então sai por cima: ele PASSA, não
+   recua. A curva, que se desenha de cima pra baixo, continua se
+   desenhando pra fora pelo rodapé (isso mora em cenario.js).
+
+   ── ESPECIFICIDADE ─────────────────────────────────────────
+   `.secao.is-saindo .x` são três classes e ganha de
+   `.is-imediato .x`, que são duas. Sem isso, um passo já
+   completado (que carrega `.is-imediato` e `animation: none`)
+   sairia sem animar nenhuma.
+   ============================================================ */
+
+.secao.is-saindo { pointer-events: none; }
+
+/* A — títulos sobem e somem dentro da própria máscara */
+.secao.is-saindo .wr__i {
+  animation: wrSai 0.62s cubic-bezier(0.55, 0, 0.85, 0.15) forwards;
+  animation-delay: calc(var(--sai-atraso, 0s) + var(--i) * 26ms);
+}
+@keyframes wrSai {
+  from { transform: translateY(0) rotate(0deg); opacity: 1; }
+  to   { transform: translateY(-118%) rotate(-8deg); opacity: 0; }
+}
+
+/* B — corpo apaga com uma deriva curta pra cima */
+.secao.is-saindo .ow {
+  animation: owSai 0.5s cubic-bezier(0.55, 0, 0.85, 0.15) forwards;
+  animation-delay: calc(var(--sai-atraso, 0s) + var(--i) * 9ms);
+  transition: none;
+}
+@keyframes owSai {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-18px); }
+}
+
+/* C — a barra volta e leva a frase embora
+
+   A saída do wipe é o gesto de entrada tocado ao contrário: o
+   marca-texto passa de volta por cima do que revelou. É o único
+   momento do deck em que a barra corre da esquerda pra direita,
+   e é o que faz a frase parecer levada, e não apagada. */
+.secao.is-saindo .wipe__b {
+  animation: wipeBarraSai 0.42s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+  animation-delay: calc(var(--sai-atraso, 0s) + var(--i) * 55ms);
+  transform-origin: left center;
+}
+@keyframes wipeBarraSai {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.secao.is-saindo .wipe__l {
+  animation: wipeLinhaSai 0.36s cubic-bezier(0.55, 0, 0.85, 0.15) forwards;
+  animation-delay: calc(var(--sai-atraso, 0s) + var(--i) * 55ms + 260ms);
+}
+@keyframes wipeLinhaSai {
+  from { clip-path: inset(-0.3em 0 -0.3em 0); }
+  to   { clip-path: inset(-0.3em 0 -0.3em 100%); }
+}
+
+/* D e E — datas e nomes apagam com deriva, sem desmontar letra
+   a letra: gastar meio segundo explicando a saída de um nome
+   que a plateia já leu é tempo roubado do próximo slide. */
+.secao.is-saindo .scr,
+.secao.is-saindo .slot {
+  animation: owSai 0.46s cubic-bezier(0.55, 0, 0.85, 0.15) forwards;
+  animation-delay: var(--sai-atraso, 0s);
+}
+
+/* SURGE — molduras, itens, selos */
+.secao.is-saindo .surge,
+.secao.is-saindo [data-passo].surge {
+  animation: surgeSai 0.55s cubic-bezier(0.55, 0, 0.85, 0.15) forwards;
+  animation-delay: calc(var(--sai-atraso, 0s) + var(--i) * 30ms);
+}
+@keyframes surgeSai {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-40px) scale(0.98); }
+}
+
+.secao.is-saindo .regua,
+.secao.is-saindo [data-passo].regua {
+  animation: reguaSai 0.4s cubic-bezier(0.55, 0, 0.85, 0.15) forwards;
+  animation-delay: var(--sai-atraso, 0s);
+  transform-origin: right center;
+}
+@keyframes reguaSai {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* ── A CONSTELAÇÃO SAI SEM PULAR ─────────────────────────────
+   Os nomes e o bloco central são posicionados por
+   `transform: translate(-50%, -50%)`. Qualquer keyframe que
+   escreva `transform` neles APAGA essa centralização, e o nome
+   salta pro canto no primeiro frame da saída — que era o
+   "glitch nas palavras" na troca desse slide.
+
+   Nos nomes, quem anima é o <span> de dentro, que não carrega
+   posicionamento. No bloco central, o keyframe repete o
+   translate e só acrescenta a deriva. */
+.secao.is-saindo .constelacao__nome { animation: none; }
+
+.secao.is-saindo .constelacao__centro {
+  animation: centroSai 0.5s cubic-bezier(0.55, 0, 0.85, 0.15) forwards;
+  animation-delay: var(--sai-atraso, 0s);
+  transition: none;
+}
+@keyframes centroSai {
+  from { opacity: 1; transform: translate(-50%, -50%); }
+  to   { opacity: 0; transform: translate(-50%, calc(-50% - 18px)); }
+}
+
+.secao.is-saindo .constelacao__linhas {
+  animation: sumir 0.4s linear forwards;
+  animation-delay: var(--sai-atraso, 0s);
+}
+@keyframes sumir {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
