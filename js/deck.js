@@ -951,6 +951,9 @@
     s.el.classList.remove('is-saindo');
     s.el.classList.add('is-ativa');
 
+    // A pilula de idioma so existe na capa. Ver css/idioma.css.
+    document.body.classList.toggle('na-capa', Number(s.el.dataset.i) === 0);
+
     espinha.visivel(!!s.d.espinha);
     espinha.creditos(s.d.espinha === 'creditos');
     if (s.d.espinha === 'creditos') espinha.tudo();
@@ -1090,6 +1093,16 @@
 
       var k = e.key;
 
+      /* O seletor de idioma come o teclado inteiro enquanto
+         esta aberto. Se nao comesse, a seta que escolhe o
+         idioma avancaria o slide junto. */
+      if (window.Seletor && window.Seletor.aberto()) {
+        window.Seletor.tecla(e); e.preventDefault(); return;
+      }
+      if (k === 'i' || k === 'I') {
+        if (window.Seletor) { window.Seletor.abrir(); e.preventDefault(); return; }
+      }
+
       if (document.querySelector('.mapa.is-aberto') || document.querySelector('.manifesto.is-aberto')) {
         if (k === 'Escape' || k === 'o' || k === 'O' || k === 'm' || k === 'M') {
           fecharSobreposicoes(); e.preventDefault();
@@ -1137,6 +1150,11 @@
     var mapa = document.getElementById('mapa');
     var grade = mapa.querySelector('.mapa__grade');
     var blocoAtual = null;
+
+    if (window.I18N) {
+      mapa.querySelector('.mapa__titulo').textContent = window.I18N.t('mapa_t');
+      mapa.querySelector('.mapa__dica').textContent = window.I18N.t('mapa_d');
+    }
 
     secoes.forEach(function (s, i) {
       if (s.d.bloco !== blocoAtual) {
@@ -1279,10 +1297,11 @@
     if (p.texto) return p.texto;
     if (p.linhas) return p.linhas.join(' ');
     if (p.titulo) return p.titulo;
-    if (p.tipo === 'midia') return '[' + (p.tipo_midia || 'imagem') + '] ' + (p.rotulo || '');
-    if (p.marco) return '[a linha do tempo avança]';
-    if (p.convergir) return '[os nomes convergem]';
-    if (p.tipo === 'stand') return '[chamada pro stand]';
+    var T = window.I18N ? window.I18N.t : function () { return ''; };
+    if (p.tipo === 'midia') return '[' + (p.tipo_midia || T('r_imagem')) + '] ' + (p.rotulo || '');
+    if (p.marco) return T('r_timeline');
+    if (p.convergir) return T('r_convergem');
+    if (p.tipo === 'stand') return T('r_stand');
     return '[' + p.tipo + ']';
   }
 

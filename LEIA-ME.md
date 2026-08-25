@@ -32,6 +32,7 @@ Depois de abrir, aperte **`F`** pra entrar em tela cheia.
 | **M** | lista da mídia que ainda falta |
 | **P** | esconde/mostra a barrinha de progresso e a marca |
 | **C** | mostra o cursor do mouse (ele fica escondido por padrão) |
+| **I** | troca o idioma (pt-BR · pt-PT · es-ES · en-US) |
 | **Home / End** | primeira / última seção |
 
 PgUp e PgDn cobrem praticamente todo passador de slides do mercado.
@@ -99,6 +100,51 @@ porque ela cai numa frase específica: *"eu juntei tudo num lugar só"*.
 
 Ritmo em `js/deck.js`: `CASCATA_NOME` (entre um nome e o seguinte) e
 `VIDA_NOME` (entre duas reanimações depois que todos entraram).
+
+---
+
+## Os quatro idiomas
+
+O deck abre perguntando o idioma: **pt-BR**, **pt-PT**, **es-ES**,
+**en-US**. Escolheu uma vez, ele lembra — nos ensaios seguintes já
+abre direto no idioma escolhido, sem perguntar de novo.
+
+Depois disso dá pra trocar pela tecla **`I`**, de qualquer lugar do
+deck, ou pela pílula discreta no canto da capa. Trocar recarrega a
+página (é instantâneo — o deck não faz nenhuma requisição de rede).
+
+Pra abrir já num idioma, sem passar pela escolha:
+`index.html?lang=en-US`. Serve pro dia em que o link for mandado
+pronto pra alguém.
+
+A tela de retorno (tecla **`R`**) nasce no mesmo idioma da projeção,
+deixas incluídas.
+
+**A estrutura continua vivendo num arquivo só.** `js/roteiro.js` é a
+fonte da verdade: layout, ordem das seções, coordenadas da
+constelação, arquivos de mídia — e o texto em pt-BR. Os outros três
+idiomas são **tabelas de texto** em `js/idiomas/`, que dizem só "na
+seção 7, passo 3, o texto é este". Elas não repetem estrutura
+nenhuma.
+
+```
+js/roteiro.js          estrutura + pt-BR   ← edite aqui
+js/idiomas/pt-PT.js    só texto
+js/idiomas/es-ES.js    só texto
+js/idiomas/en-US.js    só texto
+js/i18n.js             escolhe o idioma e sobrepõe a tabela
+js/seletor.js          a tela de escolha
+```
+
+**Mexeu no texto em português?** Mexa no campo correspondente das três
+tabelas. Elas são indexadas por POSIÇÃO (`secoes[i].passos[k]`), então
+**mudar a ORDEM das seções em `roteiro.js` desalinha as traduções** —
+quando isso acontece o console avisa na abertura. Campo que falta na
+tabela cai no pt-BR em vez de abrir buraco na tela.
+
+Nome de pessoa, nome de empresa e número não são traduzidos em lugar
+nenhum — inclusive os R$ 80 e R$ 130 do almoço do BTG, que em inglês
+continuam em reais porque converter mataria a piada.
 
 ---
 
@@ -218,11 +264,15 @@ index.html        o deck
 retorno.html      a tela do operador
 css/
   fontes.css      Inter embutida em base64
+  idioma.css      o seletor de idioma
   deck.css        tokens, temas, cenário, molduras
   reveals.css     os cinco movimentos, entrada e saída
   layouts.css     as doze composições
 js/
-  roteiro.js      TODO o conteúdo  ← é aqui que você edita
+  roteiro.js      estrutura + o texto pt-BR  ← é aqui que você edita
+  idiomas/        pt-PT, es-ES, en-US (só texto)
+  i18n.js         escolhe o idioma e sobrepõe
+  seletor.js      a tela de escolha do idioma
   reveals.js      scramble e slot
   cenario.js      a linha do tempo e a curva que respira
   deck.js         navegação, temas, ajuste de encaixe

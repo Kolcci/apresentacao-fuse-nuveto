@@ -1,0 +1,228 @@
+/* ============================================================
+   SELETOR DE IDIOMA
+
+   Usa os tokens do deck.css — inclusive os de tema, porque a
+   capa é papel claro mas a pessoa pode abrir a tecla I no meio
+   de um ato escuro, e aí o painel tem que virar junto.
+   ============================================================ */
+
+.idioma {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: var(--margem-v) var(--margem);
+
+  background: color-mix(in srgb, var(--fundo) 82%, transparent);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.42s var(--expo), visibility 0s linear 0.42s;
+}
+
+.idioma.is-aberto {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.42s var(--expo), visibility 0s;
+}
+
+.idioma__caixa {
+  width: min(78rem, 100%);
+  text-align: center;
+  transform: translateY(1.4rem);
+  transition: transform 0.62s var(--expo);
+}
+
+.idioma.is-aberto .idioma__caixa { transform: none; }
+
+.idioma__titulo {
+  font-size: var(--t-sub);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+  margin-bottom: clamp(1.6rem, 3.4vh, 3rem);
+}
+
+/* Quatro colunas na projeção, duas num notebook, uma no
+   telemóvel — este deck agora também vive numa URL pública, e
+   metade de quem abrir vai abrir do telemóvel. */
+/* `min-content` e não `0` no minmax: as quatro colunas ficam do
+   tamanho da MAIOR delas, e a maior é "UNITED STATES". Com
+   minmax(0,1fr) as colunas ficam iguais mas menores que o
+   conteúdo, e o rótulo do inglês sai cortado pela borda direita
+   do botão. */
+.idioma__grade {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(min-content, 1fr));
+  gap: clamp(0.6rem, 1.2vw, 1.1rem);
+}
+
+@media (max-width: 1000px) {
+  .idioma__grade { grid-template-columns: repeat(2, minmax(min-content, 1fr)); }
+}
+@media (max-width: 520px) {
+  .idioma__grade { grid-template-columns: 1fr; }
+}
+
+.idioma__op {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.7rem, 1.1vw, 1.1rem);
+
+  padding: clamp(0.9rem, 1.7vh, 1.5rem) clamp(0.9rem, 1.4vw, 1.4rem);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--veu);
+  color: var(--tinta);
+  font-family: var(--fonte);
+  text-align: left;
+  cursor: pointer;
+
+  transition: border-color 0.28s var(--quad-out),
+              background 0.28s var(--quad-out),
+              transform 0.28s var(--expo);
+}
+
+.idioma__op:hover,
+.idioma__op.is-foco {
+  border-color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 9%, transparent);
+  transform: translateY(-2px);
+}
+
+.idioma__op.is-atual .idioma__sigla {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
+/* A chip BR/PT/ES/US: mesma família das etiquetas `papel` e
+   `kicker` do deck — monoespaçada, caixa alta, tracking largo. */
+.idioma__sigla {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.9em;
+  height: 2.1em;
+
+  font-family: var(--mono);
+  font-size: var(--t-mini);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+
+  border: 1px solid var(--linha);
+  border-radius: calc(var(--raio) * 0.4);
+  color: var(--tinta-2);
+
+  transition: background 0.28s var(--quad-out), color 0.28s var(--quad-out),
+              border-color 0.28s var(--quad-out);
+}
+
+.idioma__op:hover .idioma__sigla,
+.idioma__op.is-foco .idioma__sigla {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.idioma__op.is-atual:hover .idioma__sigla,
+.idioma__op.is-atual.is-foco .idioma__sigla { color: #fff; }
+
+.idioma__txt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  min-width: 0;
+}
+
+.idioma__rot {
+  font-size: var(--t-mini);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--tinta);
+  white-space: nowrap;
+}
+
+.idioma__sub {
+  font-size: var(--t-kicker);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+  white-space: nowrap;
+}
+
+.idioma__dica {
+  margin-top: clamp(1.4rem, 3vh, 2.6rem);
+  font-size: var(--t-kicker);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+}
+
+/* ------------------------------------------------------------
+   A PÍLULA DA CAPA
+
+   Só existe na seção 0 e some assim que o deck anda. Quem
+   quiser trocar depois usa a tecla I — que está escrita na
+   dica do painel e no LEIA-ME.
+   ------------------------------------------------------------ */
+.idioma-pil {
+  position: fixed;
+  z-index: 40;
+  right: var(--margem);
+  bottom: var(--margem-v);
+
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+
+  padding: 0.55em 0.9em;
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  background: var(--veu);
+  color: var(--tinta-2);
+  font-family: var(--fonte);
+  cursor: pointer;
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.5rem);
+  transition: opacity 0.5s var(--expo), transform 0.5s var(--expo),
+              visibility 0s linear 0.5s, border-color 0.28s var(--quad-out);
+}
+
+/* deck.js põe `na-capa` no body enquanto a seção 0 está no ar. */
+body.na-capa .idioma-pil {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.5s var(--expo) 0.35s, transform 0.5s var(--expo) 0.35s,
+              visibility 0s, border-color 0.28s var(--quad-out);
+}
+
+/* Com o painel aberto a pílula sai da frente — ela é o botão
+   que o abriu. */
+body.tem-idioma .idioma-pil { opacity: 0; visibility: hidden; transition-delay: 0s; }
+
+.idioma-pil:hover { border-color: var(--blue); color: var(--blue); }
+
+.idioma-pil__s {
+  font-family: var(--mono);
+  font-size: var(--t-kicker);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.idioma-pil__r {
+  font-size: var(--t-kicker);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* O deck esconde o cursor (tecla C devolve). Dentro do seletor
+   ele precisa existir, senão não dá pra clicar em nada. */
+.idioma, .idioma *, .idioma-pil, .idioma-pil * { cursor: pointer; }
+.idioma__caixa { cursor: default; }

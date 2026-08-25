@@ -21,12 +21,12 @@
 
   <main class="corpo" id="corpo">
     <section class="coluna coluna--principal">
-      <div class="rot">na tela agora</div>
+      <div class="rot" data-i18n="ret_agora">na tela agora</div>
       <div class="agora__t" id="agora-t">—</div>
       <div class="agora__d" id="agora-d"></div>
 
       <div class="deixa">
-        <div class="rot deixa__rot">aperte a seta quando ele disser</div>
+        <div class="rot deixa__rot" data-i18n="ret_deixa">aperte a seta quando ele disser</div>
         <div class="deixa__txt is-vazia" id="deixa">—</div>
       </div>
 
@@ -34,7 +34,7 @@
     </section>
 
     <aside class="coluna">
-      <div class="rot">próximo</div>
+      <div class="rot" data-i18n="ret_prox">próximo</div>
       <div class="prox">
         <div class="prox__tag" id="prox-tag"></div>
         <div class="prox__t" id="prox-t">—</div>
@@ -42,16 +42,20 @@
       </div>
 
       <div class="teclas">
-        <b>→ ␣ PgDn</b> avança<br />
-        <b>←   PgUp</b> volta<br />
-        <b>T</b> liga/pausa o cronômetro<br />
-        <b>Shift+T</b> zera o cronômetro<br />
-        <span style="opacity:.7">as setas funcionam desta janela também</span>
+        <b>→ ␣ PgDn</b> <span data-i18n="ret_avanca">avança</span><br />
+        <b>←   PgUp</b> <span data-i18n="ret_volta">volta</span><br />
+        <b>T</b> <span data-i18n="ret_crono">liga/pausa o cronômetro</span><br />
+        <b>Shift+T</b> <span data-i18n="ret_zera">zera o cronômetro</span><br />
+        <span style="opacity:.7" data-i18n="ret_setas">as setas funcionam desta janela também</span>
       </div>
     </aside>
   </main>
 
   <script src="js/roteiro.js"></script>
+  <script src="js/idiomas/pt-PT.js"></script>
+  <script src="js/idiomas/es-ES.js"></script>
+  <script src="js/idiomas/en-US.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/canal.js"></script>
   <script>
   /* ============================================================
@@ -141,38 +145,48 @@
       document.documentElement.style.setProperty('--cor', e.cor);
 
       el('contador').innerHTML =
-        'seção <b>' + (e.iSecao + 1) + '</b>/' + e.total +
-        '  ·  passo <b>' + (e.iPasso + 1) + '</b>/' + e.nPassos;
+        T('ret_secao') + ' <b>' + (e.iSecao + 1) + '</b>/' + e.total +
+        '  ·  ' + T('ret_passo') + ' <b>' + (e.iPasso + 1) + '</b>/' + e.nPassos;
 
       el('agora-t').textContent = e.agora || '—';
       el('agora-d').textContent = e.agoraDetalhe || '';
 
       var d = el('deixa');
       if (e.fim) {
-        d.textContent = 'fim da apresentação';
+        d.textContent = T('ret_fim');
         d.classList.add('is-vazia');
       } else if (e.deixa) {
         d.textContent = e.deixa;
         d.classList.remove('is-vazia');
       } else {
-        d.textContent = 'sem deixa anotada — avance no ritmo dele';
+        d.textContent = T('ret_semdeixa');
         d.classList.add('is-vazia');
       }
 
-      el('prox-t').textContent = e.proximo || 'fim';
+      el('prox-t').textContent = e.proximo || T('ret_fimcurto');
       el('prox-d').textContent = e.proximoDetalhe || '';
       var tag = el('prox-tag');
       if (e.proximaSecao) {
-        tag.textContent = 'troca de seção';
+        tag.textContent = T('ret_troca');
         tag.className = 'prox__tag prox__tag--secao';
       } else {
-        tag.textContent = 'mesmo slide, próximo passo';
+        tag.textContent = T('ret_mesmo');
         tag.className = 'prox__tag';
       }
 
       el('aviso').textContent = e.pausa || '';
       tique();
     }
+
+    /* O idioma chega pela URL (canal.js abre 'retorno.html?lang=…').
+       Aberto direto pela URL sem ?lang=, cai na preferencia
+       guardada e, na falta dela, em pt-BR. */
+    function T(k) { return window.I18N ? window.I18N.t(k) : ''; }
+
+    document.title = T('ret_titulo');
+    document.querySelectorAll('[data-i18n]').forEach(function (n) {
+      n.textContent = T(n.dataset.i18n);
+    });
 
     window.Canal.ouvir(pintar);
 

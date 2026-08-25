@@ -32,8 +32,13 @@
 
   function abrirRetorno() {
     if (janela && !janela.closed) { janela.focus(); return; }
+    /* O idioma vai na URL, e não pelo localStorage: em file://
+       cada documento é origem opaca e o retorno não enxergaria
+       a preferência do deck. Aberto pela tecla R, ele nasce no
+       mesmo idioma da projeção. */
+    var lang = (window.I18N && window.I18N.atual) || 'pt-BR';
     janela = window.open(
-      'retorno.html',
+      'retorno.html?lang=' + encodeURIComponent(lang),
       'fuse-retorno',
       'width=1180,height=780,menubar=no,toolbar=no,location=no,status=no'
     );

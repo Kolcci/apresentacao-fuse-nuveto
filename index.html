@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>fuse AIoT · Grupo Nuveto</title>
-  <link rel="icon" type="image/svg+xml" href="../fuse-vertical-normal.svg" />
+  <!-- O SVG mora AQUI DENTRO, não em ../ . O deck virou uma URL
+       pública (gruponuveto.fuseiot.io) e a pasta de cima não
+       existe mais do lado de fora do repositório do site. -->
+  <link rel="icon" type="image/svg+xml" href="fuse-vertical-normal.svg" />
 
   <!--
     NENHUMA REFERÊNCIA EXTERNA. Nem fonte, nem script, nem CDN.
@@ -22,6 +25,7 @@
   <link rel="stylesheet" href="css/deck.css" />
   <link rel="stylesheet" href="css/reveals.css" />
   <link rel="stylesheet" href="css/layouts.css" />
+  <link rel="stylesheet" href="css/idioma.css" />
 </head>
 <body>
 
@@ -61,7 +65,25 @@
   <script src="js/reveals.js"></script>
   <script src="js/cenario.js"></script>
   <script src="js/canal.js"></script>
+
+  <!-- A ORDEM AQUI É O CONTRATO DO i18n.
+
+       roteiro.js carrega a estrutura e o pt-BR. As três tabelas
+       de idioma se registram em window.TRADUCOES. i18n.js
+       escolhe o idioma e escreve a tradução por cima do
+       roteiro. Só então deck.js monta — ele lê window.ROTEIRO
+       uma vez, no DOMContentLoaded, e nunca mais.
+
+       Trocar i18n.js de lugar (pra depois do deck) faria a
+       apresentação montar em português e traduzir depois: 49
+       seções já medidas com o texto errado. -->
   <script src="js/roteiro.js"></script>
+  <script src="js/idiomas/pt-PT.js"></script>
+  <script src="js/idiomas/es-ES.js"></script>
+  <script src="js/idiomas/en-US.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/seletor.js"></script>
+
   <script src="js/deck.js"></script>
 </body>
 </html>
